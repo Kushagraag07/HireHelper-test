@@ -1,0 +1,55 @@
+"use client";
+
+import React from "react";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
+
+const SpeechToTextPage = () => {
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+  } = useSpeechRecognition();
+
+  if (!browserSupportsSpeechRecognition) {
+    return <span>Your browser does not support speech recognition.</span>;
+  }
+
+  const start = () => {
+    SpeechRecognition.startListening({ continuous: true, language: "en-US" });
+  };
+
+  const stop = () => {
+    SpeechRecognition.stopListening();
+  };
+
+  return (
+    <div className="p-8 font-sans max-w-2xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">🎙️ Real-Time Speech to Text</h1>
+
+      <div className="flex gap-4 mb-4">
+        <button onClick={start} className="bg-green-500 text-white px-4 py-2 rounded">
+          Start
+        </button>
+        <button onClick={stop} className="bg-red-500 text-white px-4 py-2 rounded">
+          Stop
+        </button>
+        <button onClick={resetTranscript} className="bg-gray-600 text-white px-4 py-2 rounded">
+          Reset
+        </button>
+      </div>
+
+      <div className="bg-gray-100 p-4 rounded shadow min-h-[150px]">
+        <p className="text-lg whitespace-pre-wrap">{transcript || "🎤 Say something..."}</p>
+      </div>
+
+      <p className="mt-4 text-sm text-gray-500">
+        Listening: <strong>{listening ? "Yes 🎧" : "No ❌"}</strong>
+      </p>
+    </div>
+  );
+};
+
+export default SpeechToTextPage;
