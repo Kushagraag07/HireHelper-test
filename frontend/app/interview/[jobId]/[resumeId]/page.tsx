@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, LiveTranscriptionEvents } from "@deepgram/sdk";
 import { elevenLabsService, ElevenLabsVoice } from "@/lib/elevenlab";
@@ -79,10 +79,9 @@ export default function InterviewPage({
   const [proctorWarning, setProctorWarning] = useState<string | null>(null);
   const [interviewEndedByProctor, setInterviewEndedByProctor] = useState(false);
   
-  // Fullscreen state
+  // Fullscreen state - removed unused isFullscreen variable
   const [fullscreenExitCount, setFullscreenExitCount] = useState(0);
   const [fullscreenWarning, setFullscreenWarning] = useState<string | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
 
   // Timer state (10 minutes)
@@ -215,7 +214,12 @@ export default function InterviewPage({
   };
 
   const checkFullscreenStatus = () => {
-    return !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).mozFullScreenElement || (document as any).msFullscreenElement);
+    return !!(
+      document.fullscreenElement || 
+      (document as Document & { webkitFullscreenElement?: Element }).webkitFullscreenElement || 
+      (document as Document & { mozFullScreenElement?: Element }).mozFullScreenElement || 
+      (document as Document & { msFullscreenElement?: Element }).msFullscreenElement
+    );
   };
 
   // Complete setup and start interview
@@ -239,7 +243,56 @@ export default function InterviewPage({
     }
   }, [setupComplete, videoStream]);
 
-  // WebSocket connection (only after setup)
+  // Text-to-speech with ElevenLabs - use useCallback to fix dependency issue
+  const speakText = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+    
+    setIsSpeaking(true);
+    
+    try {
+      // Try ElevenLabs first
+      if (elevenLabsService.isAvailable() && selectedVoice) {
+        const audioBuffer = await elevenLabsService.textToSpeech(text, selectedVoice.voice_id);
+        
+        if (audioBuffer) {
+          await elevenLabsService.playAudio(audioBuffer);
+          setIsSpeaking(false);
+          return;
+        }
+      }
+      
+      // Fallback to browser speech synthesis
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        
+        const utterance = new window.SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 0.8;
+        
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        
+        window.speechSynthesis.speak(utterance);
+      } else {
+        setIsSpeaking(false);
+      }
+    } catch (error) {
+      console.error('Error with text-to-speech:', error);
+      setIsSpeaking(false);
+      
+      // Final fallback to browser speech synthesis
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utterance = new window.SpeechSynthesisUtterance(text);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+  }, [selectedVoice]);
+
+  // WebSocket connection (only after setup) - now includes speakText and status.max_questions in dependencies
   useEffect(() => {
     if (!setupComplete || !jobId || !resumeId) return;
 
@@ -292,11 +345,11 @@ export default function InterviewPage({
             is_complete: true,
           });
         } else {
-          setStatus({
+          setStatus(prevStatus => ({
             question_count,
-            max_questions: max_questions || status.max_questions,
-            is_complete: question_count >= (max_questions || status.max_questions),
-          });
+            max_questions: max_questions || prevStatus.max_questions,
+            is_complete: question_count >= (max_questions || prevStatus.max_questions),
+          }));
         }
 
         // Set AI response and trigger TTS (skip screen sharing messages)
@@ -325,7 +378,7 @@ export default function InterviewPage({
     return () => {
       socket.close();
     };
-  }, [setupComplete, jobId, resumeId]);
+  }, [setupComplete, jobId, resumeId, speakText, status.max_questions]);
 
   // Voice interaction functions
   const cleanupVoice = () => {
@@ -472,60 +525,10 @@ export default function InterviewPage({
     }
   };
 
-  // Text-to-speech with ElevenLabs
-  const speakText = async (text: string) => {
-    if (!text.trim()) return;
-    
-    setIsSpeaking(true);
-    
-    try {
-      // Try ElevenLabs first
-      if (elevenLabsService.isAvailable() && selectedVoice) {
-        const audioBuffer = await elevenLabsService.textToSpeech(text, selectedVoice.voice_id);
-        
-        if (audioBuffer) {
-          await elevenLabsService.playAudio(audioBuffer);
-          setIsSpeaking(false);
-          return;
-        }
-      }
-      
-      // Fallback to browser speech synthesis
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        
-        const utterance = new window.SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        utterance.volume = 0.8;
-        
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
-        
-        window.speechSynthesis.speak(utterance);
-      } else {
-        setIsSpeaking(false);
-      }
-    } catch (error) {
-      console.error('Error with text-to-speech:', error);
-      setIsSpeaking(false);
-      
-      // Final fallback to browser speech synthesis
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        const utterance = new window.SpeechSynthesisUtterance(text);
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
-        window.speechSynthesis.speak(utterance);
-      }
-    }
-  };
-
   // Fullscreen monitoring
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isCurrentlyFullscreen = checkFullscreenStatus();
-      setIsFullscreen(isCurrentlyFullscreen);
 
       // If user exited fullscreen during interview
       if (!isCurrentlyFullscreen && setupComplete && !interviewEndedByProctor) {
