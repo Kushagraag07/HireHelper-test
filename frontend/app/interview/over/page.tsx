@@ -1,11 +1,8 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
 
 export default function InterviewOverPage() {
-  const router = useRouter();
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-8">
       <div className="max-w-2xl w-full text-center bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/60 p-10">
@@ -54,5 +51,3 @@ export default function InterviewOverPage() {
     </div>
   );
 }
-
-
