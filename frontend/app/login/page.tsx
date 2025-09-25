@@ -59,7 +59,7 @@ const { setUser } = useContext(AuthContext)
 
     setLoading(true); setError(''); setSuccess('')
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup'
+      const endpoint = isLogin ? '/auth/login' : '/auth/signup'
       const payload  = isLogin
         ? { email: formData.email, password: formData.password }
         : { email: formData.email, password: formData.password, name: formData.name }
