@@ -22,7 +22,7 @@ _client = QdrantClient(
 _client.recreate_collection(
     collection_name=settings.QDRANT_COLLECTION,
     vectors_config=VectorParams(
-        size=768,    
+        size=1536,    # OpenAI text-embedding-3-small dimension
         distance=Distance.COSINE
     ),
 )
