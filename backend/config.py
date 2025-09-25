@@ -1,7 +1,7 @@
 import os
 import secrets
 from dotenv import load_dotenv
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
 
 load_dotenv()
@@ -18,10 +18,9 @@ class Settings:
     QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
     QDRANT_API_KEY= os.getenv("QDRANT_API_KEY", None)
     GOOGLE_API_KEY= os.getenv("GOOGLE_API_KEY") 
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001",
-    
-        
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-small",
+        openai_api_key=os.getenv("OPENAI_API_KEY")
     )
     
     MAILJET_SENDER_EMAIL = "akshatsrivastav38@gmail.com"

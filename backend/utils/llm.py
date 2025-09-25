@@ -1,10 +1,10 @@
 # utils/llm.py
 
 from typing import Optional
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1)
 
 async def llm_score(
     resume_id: str,
@@ -14,7 +14,7 @@ async def llm_score(
     override_email: Optional[str] = None
 ) -> dict:
     """
-    Uses Gemini to score a resume against a job description,
+    Uses OpenAI GPT to score a resume against a job description,
     plus extract name/email. If override_email is provided,
     it will be used instead of the LLM's extracted email.
     """
