@@ -32,10 +32,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [ready, setReady] = useState(false)
   // Use same-origin proxy via Next.js rewrites
-  const API = ''
+  const API = process.env.NEXT_PUBLIC_API_BASE_URL
 
   useEffect(() => {
-    fetch(`${API}/api/auth/me`, { credentials: 'include' })
+    fetch(`${API}/auth/me`, { credentials: 'include' })
       .then(async res => {
         if (!res.ok) throw new Error('unauthenticated')
         const contentType = res.headers.get('content-type') || ''
