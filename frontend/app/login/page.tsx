@@ -17,7 +17,7 @@ import {
 import { AuthContext } from '@/context/AuthContext'
 
 // Use same-origin proxy via Next.js rewrites. Ignore any external base URL.
-const API = ''
+const API = 'process.env.NEXT_PUBLIC_API_BASE_URL'
 
 export default function AuthPage() {
   const router = useRouter()
